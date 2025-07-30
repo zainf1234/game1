@@ -2,13 +2,13 @@
   "name": "game1",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://zainf1234.github.io/game1",
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "export": "next export",
-    "deploy": "next build && next export"
+    "deploy": "gh-pages -d out"
   },
   "dependencies": {
     "next": "15.4.5",
