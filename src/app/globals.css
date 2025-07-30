@@ -1,26 +1,87 @@
-@import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* app/global.css */
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #222;
+  color: #eee;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.level-select, .game-over {
+  text-align: center;
+}
+
+.level-select ul {
+  list-style: none;
+  padding: 0;
+}
+
+.level-select li {
+  margin: 10px 0;
+}
+
+.level-select button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.game-screen {
+  position: relative;
+  background: #87ceeb; /* sky blue */
+  border: 3px solid #333;
+  overflow: hidden;
+  margin: auto;
+}
+
+.game-area {
+  position: relative;
+  background: #7cfc00; /* grass green */
+  height: 100%;
+  width: 100%;
+}
+
+.platform {
+  position: absolute;
+  background: #654321;
+  border-radius: 4px;
+}
+
+.coin {
+  position: absolute;
+  background: radial-gradient(circle at center, gold 40%, darkgoldenrod 100%);
+  border-radius: 50%;
+  box-shadow: 0 0 5px 2px gold;
+}
+
+.enemy {
+  position: absolute;
+  background: #b22222;
+  border-radius: 50%;
+  border: 2px solid #800000;
+}
+
+.player {
+  position: absolute;
+  background: #3498db;
+  border-radius: 50%;
+  border: 2px solid #2980b9;
+}
+
+.hud {
+  color: #fff;
+  font-weight: bold;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  background: #333a;
+  position: absolute;
+  top: 0;
+  width: 100%;
+  box-sizing: border-box;
+  z-index: 10;
 }
