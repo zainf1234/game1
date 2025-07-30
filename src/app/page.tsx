@@ -65,7 +65,9 @@ export default function Home() {
   const [onGround, setOnGround] = useState(false);
   const [lives, setLives] = useState(3);
   const [coinsCollected, setCoinsCollected] = useState<number[]>([]);
-  const [enemies, setEnemies] = useState<{ x: number; y: number; alive: boolean }[]>([]);
+  const [enemies, setEnemies] = useState<
+    { x: number; y: number; alive: boolean }[]
+  >([]);
   const keysPressed = useRef<{ [key: string]: boolean }>({});
 
   const level = LEVELS.find((lvl) => lvl.id === selectedLevelId) || null;
@@ -85,8 +87,7 @@ export default function Home() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       keysPressed.current[e.key] = true;
-      // Prevent arrow keys from scrolling page
-      if (['ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+      if (['ArrowLeft', 'ArrowRight', ' ', 'ArrowUp'].includes(e.key)) {
         e.preventDefault();
       }
     };
@@ -109,18 +110,17 @@ export default function Home() {
     let animationFrameId: number;
 
     const update = () => {
+      // Update horizontal velocity
       setPlayerVel((prev) => {
-        let newX = prev.x;
+        let newX = 0;
         let newY = prev.y + GRAVITY;
 
-        // Left/right movement
         if (keysPressed.current['ArrowLeft']) newX = -MOVE_SPEED;
         else if (keysPressed.current['ArrowRight']) newX = MOVE_SPEED;
-        else newX = 0;
 
-        // Jump
+        // Jump: space OR arrow up, only if on ground
         if (
-          keysPressed.current[' '] &&
+          (keysPressed.current[' '] || keysPressed.current['ArrowUp']) &&
           onGround
         ) {
           newY = JUMP_VELOCITY;
@@ -136,33 +136,59 @@ export default function Home() {
 
         // Boundaries left and right
         if (newX < 0) newX = 0;
-        if (newX > level.width - PLAYER_SIZE) newX = level.width - PLAYER_SIZE;
+        if (newX > level.width - PLAYER_SIZE)
+          newX = level.width - PLAYER_SIZE;
 
-        // Collision with platforms
+        // Platform collisions: check vertical collisions separately for top and bottom
         let grounded = false;
+        let hitCeiling = false;
+
         for (const plat of level.platforms) {
-          // Check if player is falling and will land on platform
-          if (
-            prev.y + PLAYER_SIZE <= plat.y && // player above platform top
-            newY + PLAYER_SIZE >= plat.y && // player falls onto platform
-            newX + PLAYER_SIZE > plat.x &&
-            newX < plat.x + plat.width
-          ) {
-            newY = plat.y - PLAYER_SIZE;
-            grounded = true;
-            break;
+          // Horizontal overlap?
+          const horizontalOverlap =
+            newX + PLAYER_SIZE > plat.x && newX < plat.x + plat.width;
+
+          if (horizontalOverlap) {
+            // Check if landing on platform top (falling down)
+            if (
+              prev.y + PLAYER_SIZE <= plat.y && // previously above platform
+              newY + PLAYER_SIZE >= plat.y && // now below or at platform top
+              playerVel.y >= 0 // moving down or stationary
+            ) {
+              newY = plat.y - PLAYER_SIZE;
+              grounded = true;
+              hitCeiling = false;
+            }
+            // Check if hitting bottom of platform (jumping up)
+            else if (
+              prev.y >= plat.y + plat.height && // previously below platform bottom
+              newY <= plat.y + plat.height && // now inside or above bottom
+              playerVel.y < 0 // moving up
+            ) {
+              newY = plat.y + plat.height + 0.5; // push player just below platform
+              hitCeiling = true;
+            }
           }
         }
+
+        // Ground floor
         if (newY > level.height - PLAYER_SIZE) {
           newY = level.height - PLAYER_SIZE;
           grounded = true;
+          hitCeiling = false;
         }
+
+        if (hitCeiling) {
+          // Cancel upward velocity if hitting bottom of platform
+          setPlayerVel((vel) => ({ ...vel, y: 0 }));
+        }
+
         setOnGround(grounded);
 
         return { x: newX, y: newY };
       });
 
-      // Check collisions with coins
+      // Coins collision
       if (level.coins.length > 0) {
         level.coins.forEach((coin, i) => {
           if (
@@ -177,11 +203,17 @@ export default function Home() {
         });
       }
 
-      // Check collisions with enemies
+      // Enemies collision
       enemies.forEach((enemy, i) => {
         if (!enemy.alive) return;
+
         const enemyBox = { x: enemy.x, y: enemy.y, width: 30, height: 30 };
-        const playerBox = { x: playerPos.x, y: playerPos.y, width: PLAYER_SIZE, height: PLAYER_SIZE };
+        const playerBox = {
+          x: playerPos.x,
+          y: playerPos.y,
+          width: PLAYER_SIZE,
+          height: PLAYER_SIZE,
+        };
 
         const isColliding =
           playerBox.x < enemyBox.x + enemyBox.width &&
@@ -211,14 +243,16 @@ export default function Home() {
         }
       });
 
-      // Check if all coins collected and all enemies defeated
+      // Level complete check
       if (
         coinsCollected.length === level.coins.length &&
         enemies.every((e) => !e.alive)
       ) {
-        // Unlock next level and go back to level select
         setUnlockedLevels((prev) => {
-          if (!prev.includes(level.id + 1) && LEVELS.some((l) => l.id === level.id + 1)) {
+          if (
+            !prev.includes(level.id + 1) &&
+            LEVELS.some((l) => l.id === level.id + 1)
+          ) {
             return [...prev, level.id + 1];
           }
           return prev;
@@ -286,17 +320,21 @@ export default function Home() {
     );
   }
 
-  // Gameplay screen
   return (
-    <main className="game-screen" style={{ width: level?.width, height: level?.height }}>
+    <main
+      className="game-screen"
+      style={{ width: level?.width, height: level?.height }}
+    >
       <div className="hud">
         <div>Lives: {lives}</div>
         <div>
           Coins: {coinsCollected.length} / {level?.coins.length}
         </div>
       </div>
-      <div className="game-area" style={{ width: level?.width, height: level?.height }}>
-        {/* Platforms */}
+      <div
+        className="game-area"
+        style={{ width: level?.width, height: level?.height }}
+      >
         {level?.platforms.map((plat, i) => (
           <div
             key={i}
@@ -310,7 +348,6 @@ export default function Home() {
           />
         ))}
 
-        {/* Coins */}
         {level?.coins.map((coin, i) => {
           if (coinsCollected.includes(i)) return null;
           return (
@@ -322,7 +359,6 @@ export default function Home() {
           );
         })}
 
-        {/* Enemies */}
         {enemies.map(
           (enemy, i) =>
             enemy.alive && (
@@ -334,7 +370,6 @@ export default function Home() {
             )
         )}
 
-        {/* Player */}
         <div
           className="player"
           style={{
