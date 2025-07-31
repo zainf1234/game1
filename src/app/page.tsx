@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 type Level = {
   id: number;
   name: string;
-  coins: { x: number; y: number }[];
-  enemies: { x: number; y: number }[];
-  platforms: { x: number; y: number; width: number; height: number }[];
   width: number;
   height: number;
+  platforms: { x: number; y: number; width: number; height: number }[];
+  coins: { x: number; y: number }[];
+  enemies: { x: number; y: number }[];
 };
 
 const LEVELS: Level[] = [
@@ -18,32 +18,35 @@ const LEVELS: Level[] = [
     name: 'Level 1',
     width: 800,
     height: 400,
+    platforms: [
+      { x: 0, y: 380, width: 800, height: 20 }, // ground
+      { x: 300, y: 320, width: 100, height: 10 },
+    ],
     coins: [
       { x: 200, y: 300 },
       { x: 350, y: 250 },
       { x: 700, y: 300 },
     ],
     enemies: [{ x: 450, y: 350 }],
-    platforms: [
-      { x: 0, y: 380, width: 800, height: 20 }, // ground
-      { x: 300, y: 320, width: 100, height: 10 },
-    ],
   },
   {
     id: 2,
     name: 'Level 2',
     width: 1000,
     height: 400,
+    platforms: [
+      { x: 0, y: 380, width: 1000, height: 20 },
+      { x: 450, y: 320, width: 120, height: 10 },
+      { x: 750, y: 280, width: 100, height: 10 },
+    ],
     coins: [
       { x: 150, y: 300 },
       { x: 500, y: 300 },
       { x: 800, y: 300 },
     ],
-    enemies: [{ x: 600, y: 350 }, { x: 900, y: 350 }],
-    platforms: [
-      { x: 0, y: 380, width: 1000, height: 20 }, // ground
-      { x: 450, y: 320, width: 120, height: 10 },
-      { x: 750, y: 280, width: 100, height: 10 },
+    enemies: [
+      { x: 600, y: 350 },
+      { x: 900, y: 350 },
     ],
   },
 ];
@@ -54,12 +57,16 @@ const JUMP_VELOCITY = -15;
 const MOVE_SPEED = 6;
 
 export default function Home() {
+  // Game modes: level-select, playing, game-over
   const [mode, setMode] = useState<'level-select' | 'playing' | 'game-over'>(
     'level-select'
   );
+
+  // Levels unlocked (start with level 1)
   const [unlockedLevels, setUnlockedLevels] = useState<number[]>([1]);
   const [selectedLevelId, setSelectedLevelId] = useState<number | null>(null);
 
+  // Player state
   const [playerPos, setPlayerPos] = useState({ x: 50, y: 0 });
   const [playerVel, setPlayerVel] = useState({ x: 0, y: 0 });
   const [onGround, setOnGround] = useState(false);
@@ -68,11 +75,13 @@ export default function Home() {
   const [enemies, setEnemies] = useState<
     { x: number; y: number; alive: boolean }[]
   >([]);
+
+  // Keyboard input tracking
   const keysPressed = useRef<{ [key: string]: boolean }>({});
 
   const level = LEVELS.find((lvl) => lvl.id === selectedLevelId) || null;
 
-  // Reset game state on level start
+  // Reset game when starting a level
   useEffect(() => {
     if (mode === 'playing' && level) {
       setPlayerPos({ x: 50, y: 0 });
@@ -80,10 +89,11 @@ export default function Home() {
       setLives(3);
       setCoinsCollected([]);
       setEnemies(level.enemies.map((e) => ({ ...e, alive: true })));
+      setOnGround(false);
     }
   }, [mode, level]);
 
-  // Keyboard event listeners
+  // Keyboard listeners
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       keysPressed.current[e.key] = true;
@@ -94,7 +104,6 @@ export default function Home() {
     const handleKeyUp = (e: KeyboardEvent) => {
       keysPressed.current[e.key] = false;
     };
-
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
     return () => {
@@ -110,7 +119,7 @@ export default function Home() {
     let animationFrameId: number;
 
     const update = () => {
-      // Update horizontal velocity
+      // Update velocities
       setPlayerVel((prev) => {
         let newX = 0;
         let newY = prev.y + GRAVITY;
@@ -118,7 +127,7 @@ export default function Home() {
         if (keysPressed.current['ArrowLeft']) newX = -MOVE_SPEED;
         else if (keysPressed.current['ArrowRight']) newX = MOVE_SPEED;
 
-        // Jump: space OR arrow up, only if on ground
+        // Jump if space or up arrow AND on ground
         if (
           (keysPressed.current[' '] || keysPressed.current['ArrowUp']) &&
           onGround
@@ -134,52 +143,52 @@ export default function Home() {
         let newX = prev.x + playerVel.x;
         let newY = prev.y + playerVel.y;
 
-        // Boundaries left and right
+        // Keep player inside level horizontal bounds
         if (newX < 0) newX = 0;
-        if (newX > level.width - PLAYER_SIZE)
+        if (level && newX > level.width - PLAYER_SIZE)
           newX = level.width - PLAYER_SIZE;
 
-        // Platform collisions: check vertical collisions separately for top and bottom
+        // Platform collision detection
         let grounded = false;
         let hitCeiling = false;
 
         for (const plat of level.platforms) {
-          // Horizontal overlap?
+          // Check horizontal overlap
           const horizontalOverlap =
             newX + PLAYER_SIZE > plat.x && newX < plat.x + plat.width;
 
           if (horizontalOverlap) {
-            // Check if landing on platform top (falling down)
+            // Landing on top of platform
             if (
-              prev.y + PLAYER_SIZE <= plat.y && // previously above platform
-              newY + PLAYER_SIZE >= plat.y && // now below or at platform top
-              playerVel.y >= 0 // moving down or stationary
+              prev.y + PLAYER_SIZE <= plat.y && // was above platform
+              newY + PLAYER_SIZE >= plat.y && // now at or below platform top
+              playerVel.y >= 0 // falling or stationary
             ) {
               newY = plat.y - PLAYER_SIZE;
               grounded = true;
               hitCeiling = false;
             }
-            // Check if hitting bottom of platform (jumping up)
+            // Hitting bottom of platform
             else if (
-              prev.y >= plat.y + plat.height && // previously below platform bottom
+              prev.y >= plat.y + plat.height && // was below platform bottom
               newY <= plat.y + plat.height && // now inside or above bottom
               playerVel.y < 0 // moving up
             ) {
-              newY = plat.y + plat.height + 0.5; // push player just below platform
+              newY = plat.y + plat.height + 0.5; // push just below platform
               hitCeiling = true;
             }
           }
         }
 
-        // Ground floor
-        if (newY > level.height - PLAYER_SIZE) {
+        // Ground boundary
+        if (level && newY > level.height - PLAYER_SIZE) {
           newY = level.height - PLAYER_SIZE;
           grounded = true;
           hitCeiling = false;
         }
 
         if (hitCeiling) {
-          // Cancel upward velocity if hitting bottom of platform
+          // Cancel upward velocity on hitting bottom
           setPlayerVel((vel) => ({ ...vel, y: 0 }));
         }
 
@@ -188,8 +197,8 @@ export default function Home() {
         return { x: newX, y: newY };
       });
 
-      // Coins collision
-      if (level.coins.length > 0) {
+      // Check coins collected
+      if (level) {
         level.coins.forEach((coin, i) => {
           if (
             !coinsCollected.includes(i) &&
@@ -203,7 +212,7 @@ export default function Home() {
         });
       }
 
-      // Enemies collision
+      // Enemy collisions
       enemies.forEach((enemy, i) => {
         if (!enemy.alive) return;
 
@@ -227,9 +236,10 @@ export default function Home() {
             setEnemies((prev) =>
               prev.map((e, idx) => (idx === i ? { ...e, alive: false } : e))
             );
+            // bounce player upward a bit
             setPlayerVel((vel) => ({ ...vel, y: JUMP_VELOCITY / 2 }));
           } else {
-            // hit by enemy, lose a life and reset position
+            // hit by enemy, lose life & reset player position
             setLives((l) => {
               const newLives = l - 1;
               if (newLives <= 0) {
@@ -243,11 +253,13 @@ export default function Home() {
         }
       });
 
-      // Level complete check
+      // Check level completion: all coins collected & all enemies dead
       if (
+        level &&
         coinsCollected.length === level.coins.length &&
         enemies.every((e) => !e.alive)
       ) {
+        // Unlock next level if any
         setUnlockedLevels((prev) => {
           if (
             !prev.includes(level.id + 1) &&
@@ -257,6 +269,7 @@ export default function Home() {
           }
           return prev;
         });
+        // Back to level select screen
         setSelectedLevelId(null);
         setMode('level-select');
       }
@@ -269,10 +282,12 @@ export default function Home() {
     return () => cancelAnimationFrame(animationFrameId);
   }, [playerPos, playerVel, coinsCollected, enemies, onGround, level, mode]);
 
+  // Render UI
+
   if (mode === 'level-select') {
     return (
       <main className="level-select">
-        <h1>Circle Platformer - Select Level</h1>
+        <h1>Circle Platformer — Select Level</h1>
         <ul>
           {LEVELS.map((lvl) => (
             <li key={lvl.id}>
@@ -298,12 +313,17 @@ export default function Home() {
         <h1>Game Over</h1>
         <button
           onClick={() => {
-            setLives(3);
-            setPlayerPos({ x: 50, y: 0 });
-            setPlayerVel({ x: 0, y: 0 });
-            setCoinsCollected([]);
-            setEnemies(level ? level.enemies.map((e) => ({ ...e, alive: true })) : []);
-            setMode('playing');
+            if (level) {
+              setLives(3);
+              setPlayerPos({ x: 50, y: 0 });
+              setPlayerVel({ x: 0, y: 0 });
+              setCoinsCollected([]);
+              setEnemies(level.enemies.map((e) => ({ ...e, alive: true })));
+              setOnGround(false);
+              setMode('playing');
+            } else {
+              setMode('level-select');
+            }
           }}
         >
           Restart Level
@@ -320,6 +340,7 @@ export default function Home() {
     );
   }
 
+  // Actual game screen rendering
   return (
     <main
       className="game-screen"
@@ -331,10 +352,12 @@ export default function Home() {
           Coins: {coinsCollected.length} / {level?.coins.length}
         </div>
       </div>
+
       <div
         className="game-area"
         style={{ width: level?.width, height: level?.height }}
       >
+        {/* Platforms */}
         {level?.platforms.map((plat, i) => (
           <div
             key={i}
@@ -348,17 +371,18 @@ export default function Home() {
           />
         ))}
 
-        {level?.coins.map((coin, i) => {
-          if (coinsCollected.includes(i)) return null;
-          return (
+        {/* Coins */}
+        {level?.coins.map((coin, i) =>
+          coinsCollected.includes(i) ? null : (
             <div
               key={i}
               className="coin"
               style={{ left: coin.x, top: coin.y, width: 20, height: 20 }}
             />
-          );
-        })}
+          )
+        )}
 
+        {/* Enemies */}
         {enemies.map(
           (enemy, i) =>
             enemy.alive && (
@@ -370,6 +394,7 @@ export default function Home() {
             )
         )}
 
+        {/* Player */}
         <div
           className="player"
           style={{
