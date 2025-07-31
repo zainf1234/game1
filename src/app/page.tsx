@@ -61,7 +61,6 @@ export default function Home() {
     'level-select'
   );
 
-  // Start with level 1 unlocked
   const [unlockedLevels, setUnlockedLevels] = useState<number[]>([1]);
   const [selectedLevelId, setSelectedLevelId] = useState<number | null>(null);
 
@@ -78,7 +77,6 @@ export default function Home() {
 
   const level = LEVELS.find((lvl) => lvl.id === selectedLevelId) || null;
 
-  // Reset player and level state when starting to play
   useEffect(() => {
     if (mode === 'playing' && level) {
       setPlayerPos({ x: 50, y: 0 });
@@ -90,7 +88,6 @@ export default function Home() {
     }
   }, [mode, level]);
 
-  // Keyboard input handlers
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       keysPressed.current[e.key] = true;
@@ -109,7 +106,6 @@ export default function Home() {
     };
   }, []);
 
-  // Game loop
   useEffect(() => {
     if (!level || mode !== 'playing') return;
 
@@ -263,11 +259,11 @@ export default function Home() {
 
   if (mode === 'level-select') {
     return (
-      <main className="level-select">
+      <main className="level-select" style={{ padding: '2rem' }}>
         <h1>Circle Platformer — Select Level</h1>
-        <ul style={{ listStyle: 'none', padding: 0 }}>
+        <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
           {LEVELS.map((lvl) => (
-            <li key={lvl.id} style={{ margin: '10px 0' }}>
+            <li key={lvl.id} style={{ margin: '1rem 0' }}>
               <button
                 disabled={!unlockedLevels.includes(lvl.id)}
                 onClick={() => {
@@ -275,8 +271,8 @@ export default function Home() {
                   setMode('playing');
                 }}
                 style={{
-                  padding: '10px 20px',
                   fontSize: '1.2rem',
+                  padding: '0.5rem 1.5rem',
                   cursor: unlockedLevels.includes(lvl.id)
                     ? 'pointer'
                     : 'not-allowed',
@@ -294,7 +290,7 @@ export default function Home() {
 
   if (mode === 'game-over') {
     return (
-      <main className="game-over">
+      <main className="game-over" style={{ padding: '2rem' }}>
         <h1>Game Over</h1>
         <button
           onClick={() => {
@@ -310,6 +306,7 @@ export default function Home() {
               setMode('level-select');
             }
           }}
+          style={{ marginRight: '1rem', padding: '0.5rem 1rem' }}
         >
           Restart Level
         </button>
@@ -318,6 +315,7 @@ export default function Home() {
             setMode('level-select');
             setSelectedLevelId(null);
           }}
+          style={{ padding: '0.5rem 1rem' }}
         >
           Back to Level Select
         </button>
@@ -328,9 +326,26 @@ export default function Home() {
   return (
     <main
       className="game-screen"
-      style={{ width: level?.width, height: level?.height }}
+      style={{
+        width: level?.width,
+        height: level?.height,
+        margin: '1rem auto',
+        position: 'relative',
+        background: '#333',
+        border: '2px solid #666',
+      }}
     >
-      <div className="hud">
+      <div
+        className="hud"
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          padding: '0 1rem',
+          fontWeight: 'bold',
+          color: 'white',
+          marginBottom: '0.5rem',
+        }}
+      >
         <div>Lives: {lives}</div>
         <div>
           Coins: {coinsCollected.length} / {level?.coins.length}
@@ -339,17 +354,26 @@ export default function Home() {
 
       <div
         className="game-area"
-        style={{ width: level?.width, height: level?.height }}
+        style={{
+          position: 'relative',
+          width: level?.width,
+          height: level?.height,
+          background: '#444',
+          overflow: 'hidden',
+        }}
       >
         {level?.platforms.map((plat, i) => (
           <div
             key={i}
             className="platform"
             style={{
+              position: 'absolute',
               left: plat.x,
               top: plat.y,
               width: plat.width,
               height: plat.height,
+              backgroundColor: '#888',
+              borderRadius: '4px',
             }}
           />
         ))}
@@ -359,7 +383,16 @@ export default function Home() {
             <div
               key={i}
               className="coin"
-              style={{ left: coin.x, top: coin.y, width: 20, height: 20 }}
+              style={{
+                position: 'absolute',
+                left: coin.x,
+                top: coin.y,
+                width: 20,
+                height: 20,
+                backgroundColor: 'gold',
+                borderRadius: '50%',
+                boxShadow: '0 0 5px 1px gold',
+              }}
             />
           )
         )}
@@ -370,7 +403,16 @@ export default function Home() {
               <div
                 key={i}
                 className="enemy"
-                style={{ left: enemy.x, top: enemy.y, width: 30, height: 30 }}
+                style={{
+                  position: 'absolute',
+                  left: enemy.x,
+                  top: enemy.y,
+                  width: 30,
+                  height: 30,
+                  backgroundColor: 'red',
+                  borderRadius: '50%',
+                  boxShadow: '0 0 5px 1px darkred',
+                }}
               />
             )
         )}
@@ -378,10 +420,14 @@ export default function Home() {
         <div
           className="player"
           style={{
+            position: 'absolute',
             left: playerPos.x,
             top: playerPos.y,
             width: PLAYER_SIZE,
             height: PLAYER_SIZE,
+            backgroundColor: 'cyan',
+            borderRadius: '50%',
+            boxShadow: '0 0 10px 2px cyan',
           }}
         />
       </div>
