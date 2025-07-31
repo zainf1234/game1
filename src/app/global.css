@@ -1,0 +1,91 @@
+html,
+body,
+#__next {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: Arial, sans-serif;
+  background: #222;
+  color: white;
+}
+
+.level-select,
+.game-over,
+.game-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+.level-select ul {
+  list-style: none;
+  padding: 0;
+}
+
+.level-select button {
+  font-size: 1.2rem;
+  padding: 0.5rem 1rem;
+  margin: 0.3rem 0;
+  cursor: pointer;
+}
+
+.level-select button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.game-screen {
+  position: relative;
+  background: #333;
+  border: 2px solid #666;
+  margin-top: 1rem;
+  user-select: none;
+  overflow: hidden;
+}
+
+.hud {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1000px;
+  padding: 0 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.game-area {
+  position: relative;
+  background: #444;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.platform {
+  position: absolute;
+  background-color: #888;
+  border-radius: 4px;
+}
+
+.coin {
+  position: absolute;
+  background-color: gold;
+  border-radius: 50%;
+  box-shadow: 0 0 5px 1px gold;
+}
+
+.enemy {
+  position: absolute;
+  background-color: red;
+  border-radius: 50%;
+  box-shadow: 0 0 5px 1px darkred;
+}
+
+.player {
+  position: absolute;
+  background-color: cyan;
+  border-radius: 50%;
+  box-shadow: 0 0 10px 2px cyan;
+}
