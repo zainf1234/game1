@@ -61,6 +61,7 @@ export default function Home() {
     'level-select'
   );
 
+  // Start with level 1 unlocked
   const [unlockedLevels, setUnlockedLevels] = useState<number[]>([1]);
   const [selectedLevelId, setSelectedLevelId] = useState<number | null>(null);
 
@@ -77,6 +78,7 @@ export default function Home() {
 
   const level = LEVELS.find((lvl) => lvl.id === selectedLevelId) || null;
 
+  // Reset player and level state when starting to play
   useEffect(() => {
     if (mode === 'playing' && level) {
       setPlayerPos({ x: 50, y: 0 });
@@ -88,6 +90,7 @@ export default function Home() {
     }
   }, [mode, level]);
 
+  // Keyboard input handlers
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       keysPressed.current[e.key] = true;
@@ -106,6 +109,7 @@ export default function Home() {
     };
   }, []);
 
+  // Game loop
   useEffect(() => {
     if (!level || mode !== 'playing') return;
 
@@ -261,14 +265,22 @@ export default function Home() {
     return (
       <main className="level-select">
         <h1>Circle Platformer — Select Level</h1>
-        <ul>
+        <ul style={{ listStyle: 'none', padding: 0 }}>
           {LEVELS.map((lvl) => (
-            <li key={lvl.id}>
+            <li key={lvl.id} style={{ margin: '10px 0' }}>
               <button
                 disabled={!unlockedLevels.includes(lvl.id)}
                 onClick={() => {
                   setSelectedLevelId(lvl.id);
                   setMode('playing');
+                }}
+                style={{
+                  padding: '10px 20px',
+                  fontSize: '1.2rem',
+                  cursor: unlockedLevels.includes(lvl.id)
+                    ? 'pointer'
+                    : 'not-allowed',
+                  opacity: unlockedLevels.includes(lvl.id) ? 1 : 0.5,
                 }}
               >
                 {lvl.name} {unlockedLevels.includes(lvl.id) ? '' : '(Locked)'}
